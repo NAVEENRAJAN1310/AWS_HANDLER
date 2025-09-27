@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Python Debugger: Python File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}"
+        },
+        {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Launch FastAPI Backend (venv)",
+      "program": "${workspaceFolder}/backend/main.py",
+      "envFile": "${workspaceFolder}/backend/tokens.env",
+      "env": {
+        "VIRTUAL_ENV": "${workspaceFolder}/backend/venv",
+        "PATH": "${workspaceFolder}/backend/venv/Scripts;${env:PATH}"
+      },
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/backend"
+    }
+    ]
+}

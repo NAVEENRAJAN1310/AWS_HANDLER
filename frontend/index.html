@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EC2 Instance Control</title>
+    <style>
+        html {
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px 24px;
+            margin-top: 48px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            margin-bottom: 24px;
+            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        button {
+            margin: 8px 0;
+            padding: 12px 0;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            background: #4299e1;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(66,153,225,0.08);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #status-display {
+            margin-top: 18px;
+            font-size: 1.1rem;
+            color: #4a5568;
+            text-align: center;
+        }
+        #ip-display {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            color: #2b6cb0;
+            word-break: break-all;
+            text-align: center;
+        }
+        @media (max-width: 500px) {
+            .container {
+                margin-top: 16px;
+                padding: 18px 8px;
+                max-width: 98vw;
+            }
+            h2 {
+                font-size: 1.3rem;
+            }
+            button {
+                font-size: 0.95rem;
+                padding: 10px 0;
+            }
+            #status-display, #ip-display {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h2>EC2 Instance Control</h2>
+    <input id="password-input" type="password" placeholder="Enter password" style="width:100%;margin-bottom:16px;padding:10px;border-radius:8px;border:1px solid #cbd5e1;font-size:1rem;">
+    <button id="auth-btn" onclick="authenticate()" style="margin-bottom:16px;">Authenticate</button>
+    <button id="start-btn" onclick="startInstance()">Start Instance</button>
+    <button id="showip-btn" onclick="showIp()">Show IP</button>
+    <button id="stop-btn" onclick="stopInstance()">Stop Instance</button>
+    <div id="auth-status" style="margin-top:10px;font-size:1rem;color:#e53e3e;text-align:center;"></div>
+    <div id="status-display"></div>
+    <div id="ip-display"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setAllButtonsDisabled(true);
+        });
+
+        let authenticated = false;
+
+        function setAllButtonsDisabled(disabled) {
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('showip-btn').disabled = true;
+            document.getElementById('stop-btn').disabled = true;
+            if (!disabled) checkInstanceStatus();
+        }
+
+        function setButtonStates(isRunning) {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const showIpBtn = document.getElementById('showip-btn');
+            if (authenticated) {
+                showIpBtn.disabled = false;
+                if (isRunning) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            } else {
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+                showIpBtn.disabled = true;
+            }
+        }
+
+        function authenticate() {
+            const password = document.getElementById('password-input').value;
+            fetch('http://localhost:9001/password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authentication === 'success') {
+                    authenticated = true;
+                    document.getElementById('auth-status').textContent = 'Authentication successful!';
+                    document.getElementById('auth-status').style.color = '#38a169';
+                    document.getElementById('auth-btn').disabled = true;
+                    document.getElementById('password-input').disabled = true;
+                    checkInstanceStatus();
+                } else {
+                    authenticated = false;
+                    document.getElementById('auth-status').textContent = 'Authentication failed!';
+                    document.getElementById('auth-status').style.color = '#e53e3e';
+                    setAllButtonsDisabled(true);
+                }
+            })
+            .catch(error => {
+                authenticated = false;
+                document.getElementById('auth-status').textContent = 'Error: ' + error;
+                document.getElementById('auth-status').style.color = '#e53e3e';
+                setAllButtonsDisabled(true);
+            });
+        }
+
+        function checkInstanceStatus() {
+            fetch('http://localhost:9001/instancestatus')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'running') {
+                        setButtonStates(true);
+                        document.getElementById('status-display').textContent = 'Instance is already running.';
+                        fetch('http://localhost:9001/getinstanceip')
+                            .then(response => response.json())
+                            .then(ipdata => {
+                                document.getElementById('ip-display').textContent = ipdata.ip ? 'Instance IP: ' + ipdata.ip : '';
+                            });
+                    } else {
+                        setButtonStates(false);
+                        document.getElementById('status-display').textContent = 'Instance is not running.';
+                        document.getElementById('ip-display').textContent = '';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('status-display').textContent = 'Error fetching status: ' + error;
+                });
+        }
+
+        function startInstance() {
+            fetch('http://localhost:9001/start-instance', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.status);
+                // Wait a moment for instance to start, then refresh status
+                setTimeout(checkInstanceStatus, 3000);
+            })
+            .catch(error => alert('Error: ' + error));
+        }
+
+        function showIp() {
+            fetch('http://localhost:9001/getinstanceip')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('ip-display').textContent = data.ip ? 'Instance IP: ' + data.ip : 'Instance not running or IP not available.';
+            })
+            .catch(error => {
+                document.getElementById('ip-display').textContent = 'Error: ' + error;
+            });
+        }
+
+        function stopInstance() {
+            fetch('http://localhost:9001/stop-instance', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.status);
+                // Wait a moment for instance to stop, then refresh status
+                setTimeout(checkInstanceStatus, 3000);
+            })
+            .catch(error => alert('Error: ' + error));
+        }
+    </script>
+</body>
+</html>
