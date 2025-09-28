@@ -140,7 +140,7 @@
 
         function authenticate() {
             const password = document.getElementById('password-input').value;
-            fetch('http://localhost:9001/password', {
+            fetch('/api/password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password })
@@ -170,13 +170,13 @@
         }
 
         function checkInstanceStatus() {
-            fetch('http://localhost:9001/instancestatus')
+            fetch('/api/instancestatus')
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'running') {
                         setButtonStates(true);
                         document.getElementById('status-display').textContent = 'Instance is already running.';
-                        fetch('http://localhost:9001/getinstanceip')
+                        fetch('/api/getinstanceip')
                             .then(response => response.json())
                             .then(ipdata => {
                                 document.getElementById('ip-display').textContent = ipdata.ip ? 'Instance IP: ' + ipdata.ip : '';
@@ -193,7 +193,7 @@
         }
 
         function startInstance() {
-            fetch('http://localhost:9001/start-instance', {
+            fetch('/api/start-instance', {
                 method: 'POST'
             })
             .then(response => response.json())
@@ -206,7 +206,7 @@
         }
 
         function showIp() {
-            fetch('http://localhost:9001/getinstanceip')
+            fetch('/api/getinstanceip')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('ip-display').textContent = data.ip ? 'Instance IP: ' + data.ip : 'Instance not running or IP not available.';
@@ -217,7 +217,7 @@
         }
 
         function stopInstance() {
-            fetch('http://localhost:9001/stop-instance', {
+            fetch('/api/stop-instance', {
                 method: 'POST'
             })
             .then(response => response.json())
