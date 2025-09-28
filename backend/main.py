@@ -51,6 +51,6 @@ async def check_password(request: Request):
     data = await request.json()
     password = data.get("password")
     if password == "Madurai@123":
-        return JSONResponse(content={"authentication": "success"})
+        return JSONResponse(content={"authentication": "success"}, status_code=200)
     else:
-        return JSONResponse(content={"authentication": "failed"}, status_code=401)
+        return JSONResponse(content={"authentication": "failed"}, status_code=200)
